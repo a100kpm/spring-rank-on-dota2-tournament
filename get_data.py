@@ -106,8 +106,3 @@ def create_csv_from_data_tour(id_tournament,path='tournament.csv'):
         write = csv.writer(f) 
         write.writerow(col_name) 
         write.writerows(data_tour) 
-        
-
-
-
-
