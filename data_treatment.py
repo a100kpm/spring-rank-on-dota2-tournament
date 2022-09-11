@@ -252,14 +252,45 @@ def merge_name_score(list_name_score,list_beta):
         
     return df,list_beta[0]
 
+def find_suitable_min(df):
+# df -> datafram contaning data from different compute of spring rank from tournament data obtained from merge_name_score
+
+# output non nan value from base column where the secondary column is as small as possible
+    df=df[~df.isnull().any(axis=1)]
+    if len(df)==0:
+        return 0
+    index_min=df.iloc[:,-1].idxmin()
+    return df[0].loc[index_min]
+
 def normalize_hero_dataframe(df):
-# df -> dataframe containing data from different way of compute spring rank from tournament data obtain from merge_name_score
+# df -> dataframe containing data from different compute of spring rank from tournament data obtained from merge_name_score
 
 # output dataframe with common minimum value for each col compared to the first one
     lenn=len(df.columns)
     for i in range(2,lenn):
         index_min=df[df.columns[i]].idxmin()
-        val_min=df[0].iloc[index_min]
+        # val_min=df[0].iloc[index_min]
+        val_min=find_suitable_min(df[[0,df.columns[i]]])
         val_df=df[df.columns[i]].iloc[index_min]
         df[df.columns[i]]+=(val_min-val_df)
+    return df
+
+def count_hero_games(tournament,df):
+# tournament -> path of tournament's data
+# df -> dataframe of ranked heroes of the tournament (used in compare_inside_tournament)
+
+# ouput df with an added column with number of time each heroes as been played
+    data=pd.read_csv(tournament)
+    df.insert(loc=1,column='number_game',value=0)
+    dico=create_hero_dico()
+    
+    for x in data.iterrows():
+        radiant=x[1].pick_radiant
+        dire=x[1].pick_dire
+        for y in radiant[1:-1].split(','):
+            name=dico[int(y)]
+            df.loc[df['name']==name,'number_game']+=1
+        for y in dire[1:-1].split(','):
+            name=dico[int(y)]
+            df.loc[df['name']==name,'number_game']+=1
     return df
