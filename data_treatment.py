@@ -111,7 +111,7 @@ def treat_data_post(name_score,data_tour,dico,remove_inf=5):
     name_score=[x for x in name_score if x[0] not in set_remove]
     return name_score
 
-def ranking_team(path='tournament.csv'):
+def ranking_team(path='tournament.csv',start_beta=0,end_beta=10):
 #
 
 # the spring ranking of every teams
@@ -139,7 +139,7 @@ def ranking_team(path='tournament.csv'):
     name_score_team=[]
     for i in range(len(name_team)):
         name_score_team.append([name_team[i],sol_ordered_team[i]])
-    beta=extract_beta(rank_team,nbr_team,A_team)
+    beta=extract_beta(rank_team,nbr_team,A_team,start=start_beta,end=end_beta)
     return name_score_team,beta
 
 def create_team_data_for_springrank(path='tournament.csv'):
@@ -294,3 +294,176 @@ def count_hero_games(tournament,df):
             name=dico[int(y)]
             df.loc[df['name']==name,'number_game']+=1
     return df
+
+def remove_hero_id(aa,id_hero_str):
+    aa=aa[1:-1].split(', ')
+    if id_hero_str in aa:
+        aa.remove(id_hero_str)
+    return '['+', '.join(aa)+']'
+
+def combine_dataframe(df_global,df):
+    df_global=df_global.merge(df[['name',df.columns[-1]]],how='left',left_on=['heroes_name'],right_on=['name'],suffixes=('', '_y'))
+    df_global.drop(columns={'name'},inplace=True)
+    return df_global
+
+def number_game_without_team(name,dico,data_tour,remove_inf):
+# name -> team name
+# dico -> dictionary of all heroes
+# data_tour -> the data from csv file (default tournament.csv)
+# remove_inf -> number of games threshold of removal of heroes
+
+# output dataframe containing number of game for each heroes, with or without the team "name"
+#remove heroes entry with 0 game played by the team "name" and 
+#heroes entry bellow remove_inf games if we remove game played by team "name"
+    dataframe_name=pd.DataFrame(list(dico.values()))
+    dataframe_name['number']=0
+    dataframe_name[f'number without team {name}']=0
+    for x in data_tour.iterrows():
+        picks_radiant=list(map(int,x[1].pick_radiant[1:-1].split(', ')))
+        picks_dire=list(map(int,x[1].pick_dire[1:-1].split(', ')))
+        picks_radiant=[dico[x] for x in picks_radiant]
+        picks_dire=[dico[x] for x in picks_dire]
+        if x[1].radiant!=name:
+            dataframe_name.loc[dataframe_name[dataframe_name[0].isin(picks_radiant)].index,f'number without team {name}']+=1
+        if x[1].dire!=name:
+            dataframe_name.loc[dataframe_name[dataframe_name[0].isin(picks_dire)].index,f'number without team {name}']+=1
+        dataframe_name.loc[dataframe_name[dataframe_name[0].isin(picks_radiant)].index,'number']+=1
+        dataframe_name.loc[dataframe_name[dataframe_name[0].isin(picks_dire)].index,'number']+=1
+        
+    dataframe_name=dataframe_name[dataframe_name[f'number without team {name}']>remove_inf]
+    dataframe_name=dataframe_name[dataframe_name[f'number without team {name}']-dataframe_name['number']!=0]
+    dataframe_name['name_id']=dataframe_name.apply(lambda x: list(dico.keys())[list(dico.values()).index(x[0])],axis=1)
+    return dataframe_name
+
+def combine_hero_without_team_score(list_name_score,list_beta,df_global,name,dico,dataframe_name):
+# list_name_score -> list of the spring rank result obtained from create_hero_ranking
+# list_beta -> list of the beta temperature associated with the above list
+# df_global -> dataframe containing the computation of every spring rank ranking of heroes
+#as well as every spring rank ranking of heroes if we remove game played with each teams with that very hero
+# name -> team name
+# dico -> dictionary of all heroes
+# dataframe_name -> dataframe containing number of game for each heroes
+
+# output updated value for df_global
+    df,beta=merge_name_score(list_name_score,list_beta)
+    df=normalize_hero_dataframe(df)
+    df=df[~df.isnull().any(axis=1)]
+    
+    
+    df['average']=df[df.columns[1:]].mean(axis=1)
+    dataframe_name['nbr_game']=dataframe_name['number']-dataframe_name[f'number without team {name}']
+    
+    df=df.merge(dataframe_name[[0,'nbr_game']],how='inner',left_on='name',right_on=0,suffixes=('', '_y'))
+    df.drop(columns=['0_y'],inplace=True)
+    df.rename(columns={'0':0},inplace=True)
+    df['average']=df[df.columns[2:-1]].mean(axis=1)
+    
+    df['score_without_team']=0
+    map_order=[]
+    i=0
+    for id_hero in dataframe_name['name_id']:
+        i+=1
+        map_order.append(dico[id_hero])
+        
+    df.name=df.name.astype("category")
+    df.name=df.name.cat.set_categories(map_order)
+    df=df.sort_values('name')
+
+
+    df[f'score_without_team {name}']=pd.Series(np.diag(df[df.columns[2:-3]]), index=df.index)
+    
+    df_global=combine_dataframe(df_global,df)
+    return df_global
+
+def hero_rank_gain_per_team(remove_inf=14,path='tournament.csv'):
+# remove_inf -> minimum number of game
+# path -> path toward tournament's data
+
+# output a dataframe containing the computation of every spring rank ranking of heroes
+#as well as every spring rank ranking of heroes if we remove game played with each teams with that very hero
+    rank_heroes,beta_heroes=create_hero_ranking(remove_inf=remove_inf)
+    df_global=pd.DataFrame(rank_heroes)
+    df_global=df_global.rename(columns={0:'heroes_name',1:'global_rank'})
+    
+    list_name_score=[rank_heroes]
+    list_beta=[beta_heroes]
+    
+    rank_team,beta_team=ranking_team()    
+    data_tour=pd.read_csv(path)
+    dico=create_hero_dico()
+    team_list=get_team_list(path)
+    
+    for name in team_list:
+        print(name)
+        list_name_score=[rank_heroes]
+        list_beta=[beta_heroes]
+        
+        dataframe_name=number_game_without_team(name,dico,data_tour,remove_inf)
+    
+
+        for id_hero in dataframe_name['name_id']:
+            print(id_hero)
+#            
+# variation of create_hero_ranking()
+#
+            data_temp=data_tour.copy()
+            id_hero_str=str(id_hero)
+            data_temp['pick_radiant']=data_temp.apply(lambda x: remove_hero_id(x.pick_radiant,id_hero_str) if x.radiant==name else x.pick_radiant,axis=1)
+            data_temp['pick_dire']=data_temp.apply(lambda x: remove_hero_id(x.pick_dire,id_hero_str) if x.dire==name else x.pick_dire,axis=1)
+            
+            
+            
+            name_score_team,beta_team=ranking_team(path,start_beta=1.5,end_beta=3)
+            name_score_team=pd.DataFrame(name_score_team)
+            winrate = get_winrate_from_tour(data_temp)
+            
+            data_temp=data_temp.merge(name_score_team, how='left', left_on=['radiant'], right_on=[0])
+            data_temp.drop(columns=[0],inplace=True)
+            data_temp.rename(columns={1: 'radiant_score'},inplace=True)
+            data_temp=data_temp.merge(name_score_team, how='left', left_on=['dire'], right_on=[0])
+            data_temp.drop(columns=[0],inplace=True)
+            data_temp.rename(columns={1: 'dire_score'},inplace=True)
+            data_temp['spring_rank_factor']= data_temp.apply(lambda x: int(100*proba_win(x.radiant_score, x.dire_score,beta_team,2)), axis=1)
+        
+            side_winrate=winrate
+            data_tour2=[]
+            for x in data_temp.iterrows():
+        
+                multiplier_factor=int(100*get_multiplier_factor(side_winrate,x[1].spring_rank_factor))
+        
+                winrate_radiant=10000-multiplier_factor
+                winrate_dire=multiplier_factor
+                
+                pick_radiant=list(map(int,x[1].pick_radiant[1:-1].split(',')))
+                pick_dire=list(map(int,x[1].pick_dire[1:-1].split(',')))
+            
+            
+                if x[1].win_radiant==True:
+                    val=create_data(pick_radiant,pick_dire,winrate_radiant)
+                else:
+                    val=create_data(pick_dire,pick_radiant,winrate_dire)
+            
+                data_tour2.extend(val)
+    
+                
+            count_hero,nbr_hero=hero_set(data_tour2)
+            name_score,beta=spring_rank_hero(data_tour2,nbr_hero,dico)
+    
+            name_score=treat_data_post(name_score,data_tour2,dico,remove_inf)
+#
+# end variation of create_hero_ranking()
+#
+            list_name_score.append(name_score)
+            list_beta.append(beta)
+    
+    
+    
+        df_global=combine_hero_without_team_score(list_name_score,list_beta,df_global,name,dico,dataframe_name)
+
+    for col_name in df_global.columns[2:]:
+        new_col_name='score_gain_with'+col_name[18:]
+        df_global[new_col_name]=df_global['global_rank']-df_global[col_name]
+    
+    df_global['average_score_gain']=df_global[df_global.columns[19:]].mean(axis=1)
+    
+    return df_global,beta,team_list
