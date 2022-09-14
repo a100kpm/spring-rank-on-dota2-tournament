@@ -10,29 +10,41 @@ from visual import *
 
 # dota_hero.csv can be obtained via opendota_api : https://www.opendota.com (data_treatment.py)
 # get a key from valve api : https://cran.r-project.org/web/packages/CSGo/vignettes/auth.html (get_data.py)
-# create_csv_from_data_tour(id_tournament)
-# get_team_list()
-# rank_team,beta_team=ranking_team()
+find_function('find_function')
+
+
+# =============================================================================
+# getting started
+# # create_csv_from_data_tour(id_tournament,path='tournament.csv')
+# ----> will generate data needed to run bellow function
+# ----> you will need to find the id of a tournement you want to investigate on
+# ----> you will need to modify dota_mykey value with your own valve api key
+# uncomment bellow to try some of the visual of the project
+# =============================================================================
 
 
 
 # =============================================================================
-# to add:
-# ### impact of individual team on each heroes
+# First plot
+# # df1,_,beta1=compare_inside_tournament('tournament.csv')
+# # plot_hero_ranking_distribution_per_game(df1)
 # =============================================================================
 
 
 
-# df1,_,beta1=compare_inside_tournament('tournament.csv')
-# plot_hero_ranking_distribution_per_game(df1)
+# =============================================================================
+# Second plot
+# # df2,beta2=compare_between_tournament(tournament=['tournament.csv','tournament2.csv'],dynamic_min_game=False)
+# # plot_hero_ranking_between_tournament(df2)
+# =============================================================================
 
 
-# df2,beta2=compare_between_tournament(tournament=['tournament.csv','tournament2.csv'],dynamic_min_game=False)
-# plot_hero_ranking_between_tournament(df2)
-    
 
-# path='tournament.csv'
-# data=pd.read_csv(path)
-# rank_heroes,beta_heroes=create_hero_ranking(path=path)
-# win_lose=post_draft_prediction(data,rank_heroes,beta_heroes)
-# print(plot_error(win_lose))
+# =============================================================================
+# Third plot
+# Warning the computation of hero_rank_gain_per_team() can be very long as it will
+# easily require to compute the spring rank ranking over 500 times. This can take 
+# over 1h to compute
+# # df_global,beta,team_list=hero_rank_gain_per_team(path='tournament.csv')
+# # plot_gain_all_team(df_global,team_list,beta)
+# =============================================================================
