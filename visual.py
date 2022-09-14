@@ -4,7 +4,34 @@
 """
 from data_treatment import *
 import matplotlib.pyplot as plt
-   
+import os
+
+def find_function(name=None):
+# name -> name of the function to search; if left as None, will search for all function in directory
+
+# output position of function in directory
+    if name==None:
+        for filename in os.listdir(os.getcwd()):
+            if filename[-3:]=='.py':
+                with open(os.path.join(os.getcwd(), filename), 'r') as f:
+                    line_number=0
+                    for line in f:
+                        line_number+=1
+                        if line[0:4]=='def ':
+                            print(filename,'at line',line_number,' -->',line.split('(')[0][4:]+'()')
+
+    else:
+        for filename in os.listdir(os.getcwd()):
+            if filename[-3:]=='.py':
+                with open(os.path.join(os.getcwd(), filename), 'r') as f:
+                    line_number=0
+                    for line in f:
+                        line_number+=1
+                        if line[0:4]=='def ':
+                            if name in line.split('(')[0][4:]:
+                                print(f'function "{name}" is located in',filename,'at line',line_number,' -->',line[4:-2],'\n')
+                                
+                                
 def compare_inside_tournament(tournament='tournament.csv',min_game=14):
 # tournament -> path to the tournament's data
 # min_game -> minimum number of game a hero need to have been played
@@ -156,22 +183,22 @@ def plot_hero_ranking_between_tournament(df):
         
 def post_draft_prediction(data,rank_heroes,beta_heroes):
 # data -> data of tournament's result (from csv file)
-# rank_heroes -> list containing the spring rank ranking of each heroes with default parameter
+# rank_heroes -> list containing the spring rank ranking of each heroes (default parameter for best result)
 # beta_heroes -> beta temperature associated from the above ranking 
 
 # output list containing the result of matches and the prediction values of the result
     dico=create_hero_dico()
     winrate=get_winrate_from_tour(data)
     df=pd.DataFrame(rank_heroes)
-    
+    average=df[1].mean()
     win_lose=[]
     for x in data.iterrows():
         radiant=list( map(int,(x[1].pick_radiant[1:-1].split(', ')) ) )
         dire=list( map(int,(x[1].pick_dire[1:-1].split(', ')) ) )
         win=x[1].win_radiant
         
-        radiant_score=[df[df[0]==dico[x]].iloc[0][1] for x in radiant]
-        dire_score=[df[df[0]==dico[x]].iloc[0][1] for x in dire]
+        radiant_score=[df[df[0]==dico[x]].iloc[0][1] if len(df[df[0]==dico[x]])>0 else average for x in radiant]
+        dire_score=[df[df[0]==dico[x]].iloc[0][1] if len(df[df[0]==dico[x]])>0 else average for x in dire]
         
         lst_matchup=[proba_win(x,y,beta=beta_heroes)*100 for x in radiant_score for y in dire_score]
         lst_matchup=[get_multiplier_factor(winrate,x) for x in lst_matchup]
@@ -215,3 +242,50 @@ def plot_error(win_lose):
 
     confusion_matrix = pd.crosstab(df['result_name'], df['prediction_name'], rownames=['real_result'], colnames=['predicted_result'])
     return confusion_matrix
+
+def plot_gain_with_team(df,team_name,beta):
+# df -> dataframe containing impact of each team on the spring rank change of each heroes
+# team_name -> name of the team
+# beta -> beta temperature of the spring rank ranking
+
+# output 2 graphs of the estimated spring rank score gain increase thanks to a particular team of heroes
+#in respect to their spring rank ranking on the tournament
+    df_temp=df[['heroes_name','global_rank',f'score_gain_with {team_name}','average_score_gain']]
+    df_temp=df_temp[~df_temp.isnull().any(axis=1)]
+    df_temp[f'score_gain_with {team_name}']=df_temp[f'score_gain_with {team_name}']-df_temp['average_score_gain']
+    df_temp[f'spring_rank_gain_with {team_name}']=df_temp.apply(lambda x: 100*see_gain(x[f'score_gain_with {team_name}'],beta),axis=1)
+    
+    min_val=df_temp[f'score_gain_with {team_name}'].min()
+    max_val=df_temp[f'score_gain_with {team_name}'].max()   
+    
+    d=np.polyfit(df_temp['global_rank'],df_temp[f'score_gain_with {team_name}'],1)
+    f=np.poly1d(d)
+    x1=df_temp['global_rank'].min()
+    x2=df_temp['global_rank'].max()
+    y1=f(x1)
+    y2=f(x2)
+    
+    ax=df_temp.plot(kind='scatter',x='global_rank',y=f'score_gain_with {team_name}',ylim=(min_val,max_val),title=f'score gain with team {team_name}')
+    plt.plot([x1,x2],[y1,y2],color="green")
+    
+    min_val=df_temp[f'spring_rank_gain_with {team_name}'].min()
+    max_val=df_temp[f'spring_rank_gain_with {team_name}'].max()   
+    
+    d=np.polyfit(df_temp['global_rank'],df_temp[f'spring_rank_gain_with {team_name}'],1)
+    f=np.poly1d(d)
+    y1=f(x1)
+    y2=f(x2)
+    
+    ax2=df_temp.plot(kind='scatter',x='global_rank',y=f'spring_rank_gain_with {team_name}',ylim=(min_val,max_val),
+                     title=f'spring rank % gain with team {team_name}')
+    plt.plot([x1,x2],[y1,y2],color="green")
+    
+def plot_gain_all_team(df,team_list,beta):
+# df -> dataframe containing impact of each team on the spring rank change of each heroes
+# team_list -> list containing all team of the tournament
+# beta -> beta temperature of the spring rank ranking
+
+# output 2 graphs for each teams of the estimated spring rank score gain increase thanks to a particular team of heroes
+    for name in team_list:
+        plot_gain_with_team(df,name,beta)
+        
