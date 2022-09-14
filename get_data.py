@@ -99,10 +99,15 @@ def get_tournament_pick_data(id_tournament):
 def create_csv_from_data_tour(id_tournament,path='tournament.csv'):
 # id_tournament -> tournament id
 
-# output a csv file with all the needed information
+# output a csv file with all the needed information and save it at path
     data_tour=get_tournament_pick_data(id_tournament)
     col_name=['radiant','dire','win_radiant','pick_radiant','pick_dire']
     with open(path, 'w',newline='') as f: 
         write = csv.writer(f) 
         write.writerow(col_name) 
         write.writerows(data_tour) 
+        
+
+
+
+
