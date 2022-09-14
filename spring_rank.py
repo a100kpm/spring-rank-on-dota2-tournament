@@ -101,7 +101,7 @@ def proba_win(score1,score2,beta=1,rounding=-1):
     else:
         return round(1/(1+exp(-beta*(score1-score2))),rounding)
 
-def spring_rank_hero(data_tour,nbr_hero,dico):
+def spring_rank_hero(data_tour,nbr_hero,dico,start_beta=0,end_beta=10):
 # data_tour -> data of the tournament generated with create_hero_data_for_springrank
 #consist of a list of element of the form [hero_winner,hero_looser,value]
 # nbr_hero -> number of heroes
@@ -130,7 +130,7 @@ def spring_rank_hero(data_tour,nbr_hero,dico):
     for i in range(len(name)):
         name_score.append([name[i],sol_ordered[i]])
         
-    beta=extract_beta(rank,nbr_hero,A)
+    beta=extract_beta(rank,nbr_hero,A,start=start_beta,end=end_beta)
     return name_score,beta
 
 def extract_beta(rank,nbr_hero,A,start=0,end=10,step=100,power=2):
@@ -138,7 +138,7 @@ def extract_beta(rank,nbr_hero,A,start=0,end=10,step=100,power=2):
 # nbr_hero -> number of heroes
 # A -> spring rank A matrix
 # start and end -> boundary to search for beta
-# step -> how many time the boundary is divided for the discret search of beta
+# step -> how many time the unit is divided for the discret search of beta
 # power -> weight on the distance for the error (default is square distance)
 
 # output the best beta coefficient for lowest error on prediction
@@ -151,7 +151,7 @@ def extract_beta(rank,nbr_hero,A,start=0,end=10,step=100,power=2):
                 else:
                     A_test[i,j]=A[i,j]/max(1,A[i,j]+A[j,i])
     keep_diff=[]
-    for B in range(start,end*step):
+    for B in range(int(start*step),int(end*step)):
         beta=B/step
         #print(beta,"/",end)
         score=0
@@ -183,3 +183,4 @@ def see_gain(changement_val,beta):
 
 # output the gain (positive) or loss (negative) of winrate of team1 over team2 compared to the 50/50 winrate
     return 1/(1+exp(-beta*changement_val))-0.5
+
