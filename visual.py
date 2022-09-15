@@ -39,6 +39,7 @@ def compare_inside_tournament(tournament='tournament.csv',min_game=14):
 # output 2 dataframe: df contains the rank of each heroes in the tournament depending on 12 way of using spring rank
 #df2 is df without row contaning nan value
     list_name_score=[]
+    list_beta=[]
     if min_game>0:
         name_score1,beta1=create_hero_ranking(team_weight=False,side_weight=False,remove_inf=0,remove_post=False,team_list=[],path=tournament)
         name_score2,beta2=create_hero_ranking(team_weight=True,side_weight=False,remove_inf=0,remove_post=False,team_list=[],path=tournament)
@@ -52,6 +53,8 @@ def compare_inside_tournament(tournament='tournament.csv',min_game=14):
         name_scorea4,betaa4=create_hero_ranking(team_weight=True,side_weight=True,remove_inf=min_game,remove_post=False,team_list=[],path=tournament)
         list_name_score=[name_score1,name_score2,name_score3,name_score4,
                          name_scorea,name_scorea2,name_scorea3,name_scorea4]
+        list_beta=[beta1,beta2,beta3,beta4,
+                   betaa,betaa2,betaa3,betaa4]
         
     name_scoreb,betab=create_hero_ranking(team_weight=False,side_weight=False,remove_inf=min_game,remove_post=True,team_list=[],path=tournament)
     name_scoreb2,betab2=create_hero_ranking(team_weight=True,side_weight=False,remove_inf=min_game,remove_post=True,team_list=[],path=tournament)
@@ -60,9 +63,8 @@ def compare_inside_tournament(tournament='tournament.csv',min_game=14):
 
     list_name_score.extend([name_scoreb,name_scoreb2,name_scoreb3,name_scoreb4])
 
-    list_beta=[beta1,beta2,beta3,beta4,
-               betaa,betaa2,betaa3,betaa4,
-               betab,betab2,betab3,betab4]
+    list_beta.extend([betab,betab2,betab3,betab4])
+               
 
     df,beta=merge_name_score(list_name_score,list_beta)
     df=normalize_hero_dataframe(df)
