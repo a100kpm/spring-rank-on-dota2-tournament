@@ -388,7 +388,7 @@ def hero_rank_gain_per_team(remove_inf=14,path='tournament.csv'):
     list_name_score=[rank_heroes]
     list_beta=[beta_heroes]
     
-    rank_team,beta_team=ranking_team()    
+    rank_team,beta_team=ranking_team(path=path)    
     data_tour=pd.read_csv(path)
     dico=create_hero_dico()
     team_list=get_team_list(path)
