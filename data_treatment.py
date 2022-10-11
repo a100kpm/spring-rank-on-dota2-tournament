@@ -381,7 +381,7 @@ def hero_rank_gain_per_team(remove_inf=14,path='tournament.csv'):
 
 # output a dataframe containing the computation of every spring rank ranking of heroes
 #as well as every spring rank ranking of heroes if we remove game played with each teams with that very hero
-    rank_heroes,beta_heroes=create_hero_ranking(remove_inf=remove_inf)
+    rank_heroes,beta_heroes=create_hero_ranking(remove_inf=remove_inf,path=path)
     df_global=pd.DataFrame(rank_heroes)
     df_global=df_global.rename(columns={0:'heroes_name',1:'global_rank'})
     
