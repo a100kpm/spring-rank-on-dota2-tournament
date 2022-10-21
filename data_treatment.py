@@ -464,6 +464,8 @@ def hero_rank_gain_per_team(remove_inf=14,path='tournament.csv'):
         new_col_name='score_gain_with'+col_name[18:]
         df_global[new_col_name]=df_global['global_rank']-df_global[col_name]
     
-    df_global['average_score_gain']=df_global[df_global.columns[19:]].mean(axis=1)
+    pos_score_without=int(np.shape(df_global)[1]/2)+1
+    df_global['average_score_gain']=df_global[df_global.columns[pos_score_without:]].mean(axis=1)
+    df_global['median_score_gain']=df_global[df_global.columns[pos_score_without:-1]].median(axis=1)
     
     return df_global,beta,team_list
