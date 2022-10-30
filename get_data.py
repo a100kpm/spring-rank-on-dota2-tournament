@@ -23,6 +23,34 @@ def get_dota_tournament_data(id_tn,mykey=dota_mykey):
     json_result=json.loads(req.data.decode('utf-8'))
     return json_result
 
+def get_dota_tournament_data(id_tn,mykey=dota_mykey):
+# id_tn -> id of the tournament
+# mykey -> key of valve's api
+
+# output information about the tournament with format json
+    http = urllib3.PoolManager()
+    request_string='http://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V1/?key='+dota_mykey+'&league_id='+str(id_tn)
+    req = http.request('GET',request_string)
+    json_result=json.loads(req.data.decode('utf-8'))
+    if json_result['result']['results_remaining']>0:
+        json_result_temp=json_result.copy()
+        i=len(json_result['result']['matches'])
+        
+        while json_result_temp['result']['results_remaining']>0: 
+            match_id=json_result_temp['result']['matches'][-1]['match_id']
+            request_string=f"""http://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V1/?key={dota_mykey}&league_id={str(id_tn)}
+            &start_at_match_id={str(match_id)}"""
+            req = http.request('GET',request_string)
+            json_result_temp=json.loads(req.data.decode('utf-8'))
+            for value in json_result_temp['result']['matches']:
+                i=len(json_result)
+                if value in json_result['result']['matches']:
+                    pass
+                else:
+                    json_result['result']['matches'].append(value)
+      
+    return json_result
+
 def get_dota_game_data(game_id,mykey=dota_mykey):
 # game_id -> id of game found in data from get_dota_tournament_data
 # mykey -> key of valve's api
