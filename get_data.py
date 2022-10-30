@@ -131,6 +131,7 @@ def create_csv_from_data_tour(id_tournament,path='tournament.csv'):
     data_tour=get_tournament_pick_data(id_tournament)
     col_name=['radiant','dire','win_radiant','pick_radiant','pick_dire']
     with open(path, 'w',newline='') as f: 
+    #with open(path, 'w',newline='',encoding="utf-8") as f: in case of rare bug with the api
         write = csv.writer(f) 
         write.writerow(col_name) 
         write.writerows(data_tour) 
