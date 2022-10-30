@@ -12,11 +12,11 @@ from spring_rank import *
 dota_mykey='******************************'
 # get a key from valve api : https://cran.r-project.org/web/packages/CSGo/vignettes/auth.html
 
-def get_dota_tournament_data(id_tn,mykey=dota_mykey):
+def get_dota_tournament_data_max_200(id_tn,mykey=dota_mykey):
 # id_tn -> id of the tournament
 # mykey -> key of valve's api
 
-# output information about the tournament with format json
+# output information about the tournament with format json (will only get first 200 results)
     http = urllib3.PoolManager()
     request_string='http://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V1/?key='+dota_mykey+'&league_id='+str(id_tn)
     req = http.request('GET',request_string)
