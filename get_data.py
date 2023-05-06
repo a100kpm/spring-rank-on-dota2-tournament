@@ -86,6 +86,10 @@ def get_multiplier_factor(winrate,spring_rank_factor):
     val=winrate*(100-spring_rank_factor)/( winrate*(100-spring_rank_factor)+ (100-winrate)*spring_rank_factor)
     return 100*round(val,4)
 
+# NOTE: you may have to modify slightly the function get_tournament_pick_data
+# Some remade game are currently not taken into account unless the ban phase has been remade
+# Some game which had to be remade are currently taken into account
+# Looking at dotabuff to know which game to remove/add is an easy fix
 def get_tournament_pick_data(id_tournament): 
 # id_tournament -> tournament id
 
